@@ -2,7 +2,8 @@ import argparse
 import cv2
 import numpy as np
 import torch
-import timm
+import os
+import glob
 
 from pytorch_grad_cam import GradCAM, \
     ScoreCAM, \
@@ -14,6 +15,7 @@ from pytorch_grad_cam import GradCAM, \
     LayerCAM, \
     FullGrad
 
+from pytorch_grad_cam import GuidedBackpropReLUModel
 from pytorch_grad_cam.utils.image import show_cam_on_image, \
     preprocess_image
 
@@ -38,7 +40,7 @@ def get_args():
     parser.add_argument(
         '--method',
         type=str,
-        default='scorecam',
+        default='gradcam',
         help='Can be gradcam/gradcam++/scorecam/xgradcam/ablationcam')
 
     args = parser.parse_args()
@@ -51,9 +53,9 @@ def get_args():
     return args
 
 
-def reshape_transform(tensor, height=7, width=7):
-    result = tensor.reshape(tensor.size(0),
-                            height, width, tensor.size(2))
+def reshape_transform(tensor, height=14, width=14):
+    result = tensor[:, 1:, :].reshape(tensor.size(0),
+                                      height, width, tensor.size(2))
 
     # Bring the channels to the first dimension,
     # like in CNNs.
@@ -62,8 +64,8 @@ def reshape_transform(tensor, height=7, width=7):
 
 
 if __name__ == '__main__':
-    """ python swinT_example.py -image-path <path_to_image>
-    Example usage of using cam-methods on a SwinTransformers network.
+    """ python viT.py -image-path <path_to_image>
+    Example usage of using cam-methods on a VIT network.
 
     """
 
@@ -82,13 +84,14 @@ if __name__ == '__main__':
     if args.method not in list(methods.keys()):
         raise Exception(f"method should be one of {list(methods.keys())}")
 
-    model = timm.create_model('swin_base_patch4_window7_224', pretrained=True)
+    model = torch.hub.load('facebookresearch/deit:main',
+                           'deit_tiny_patch16_224', pretrained=True)
     model.eval()
 
     if args.use_cuda:
         model = model.cuda()
 
-    target_layers = [model.layers[-1].blocks[-1].norm2]
+    target_layers = [model.blocks[-1].norm1]
 
     if args.method not in methods:
         raise Exception(f"Method {args.method} not implemented")
@@ -98,27 +101,30 @@ if __name__ == '__main__':
                                use_cuda=args.use_cuda,
                                reshape_transform=reshape_transform)
 
-    rgb_img = cv2.imread(args.image_path, 1)[:, :, ::-1]
-    rgb_img = cv2.resize(rgb_img, (224, 224))
-    rgb_img = np.float32(rgb_img) / 255
-    input_tensor = preprocess_image(rgb_img, mean=[0.5, 0.5, 0.5],
-                                    std=[0.5, 0.5, 0.5])
+    image_list = glob.glob(''.join(args.image_path))
+    for image in image_list:
+        rgb_img = cv2.imread(image, 1)[:, :, ::-1]
+        rgb_img = cv2.resize(rgb_img, (224, 224))
+        rgb_img = np.float32(rgb_img) / 255
+        input_tensor = preprocess_image(rgb_img, mean=[0.5, 0.5, 0.5],
+                                        std=[0.5, 0.5, 0.5])
 
-    # If None, returns the map for the highest scoring category.
-    # Otherwise, targets the requested category.
-    target_category = None
+        # If None, returns the map for the highest scoring category.
+        # Otherwise, targets the requested category.
+        target_category = None
 
-    # AblationCAM and ScoreCAM have batched implementations.
-    # You can override the internal batch size for faster computation.
-    cam.batch_size = 32
+        # AblationCAM and ScoreCAM have batched implementations.
+        # You can override the internal batch size for faster computation.
+        cam.batch_size = 32
 
-    grayscale_cam = cam(input_tensor=input_tensor,
-                        target_category=target_category,
-                        eigen_smooth=args.eigen_smooth,
-                        aug_smooth=args.aug_smooth)
+        grayscale_cam = cam(input_tensor=input_tensor,
+                            target_category=target_category,
+                            eigen_smooth=args.eigen_smooth,
+                            aug_smooth=args.aug_smooth)
 
-    # Here grayscale_cam has only one image in the batch
-    grayscale_cam = grayscale_cam[0, :]
-
-    cam_image = show_cam_on_image(rgb_img, grayscale_cam)
-    cv2.imwrite(f'{args.method}_cam.jpg', cam_image)
+        # Here grayscale_cam has only one image in the batch
+        grayscale_cam = grayscale_cam[0, :]
+        # 注意一点 若原图为png 存储热力图为jpg 可以避免多次实验中 将上次实验的 热力图 也作为 输入
+        filename = os.path.basename(image)
+        cam_image = show_cam_on_image(rgb_img, grayscale_cam)
+        cv2.imwrite('./insects/' + filename.split('.')[0] + '_viT_' + f'{args.method}.jpg', cam_image)

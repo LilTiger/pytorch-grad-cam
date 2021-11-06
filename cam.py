@@ -98,6 +98,7 @@ if __name__ == '__main__':
     for image in image_list:
         rgb_img = cv2.imread(image, 1)[:, :, ::-1]
         rgb_img = np.float32(rgb_img) / 255
+        # 因模型的pretrained为true,预训练数据集来自于ImageNet，以下的mean与std为ImageNet标准化的参数
         input_tensor = preprocess_image(rgb_img,
                                         mean=[0.485, 0.456, 0.406],
                                         std=[0.229, 0.224, 0.225])

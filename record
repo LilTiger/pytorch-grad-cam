@@ -1,0 +1,2 @@
+Note:
+swin transformer中的模型选择 若为window12_384 注意需确保输入图片尺寸为384*384
