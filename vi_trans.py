@@ -4,6 +4,7 @@ import numpy as np
 import torch
 import os
 import glob
+import pdb
 
 from pytorch_grad_cam import GradCAM, \
     ScoreCAM, \
@@ -64,7 +65,7 @@ def reshape_transform(tensor, height=14, width=14):
 
 
 if __name__ == '__main__':
-    """ python viT.py -image-path <path_to_image>
+    """ python vi_trans.py -image-path <path_to_image>
     Example usage of using cam-methods on a VIT network.
 
     """
@@ -101,30 +102,40 @@ if __name__ == '__main__':
                                use_cuda=args.use_cuda,
                                reshape_transform=reshape_transform)
 
-    image_list = glob.glob(''.join(args.image_path))
-    for image in image_list:
-        rgb_img = cv2.imread(image, 1)[:, :, ::-1]
-        rgb_img = cv2.resize(rgb_img, (224, 224))
-        rgb_img = np.float32(rgb_img) / 255
-        input_tensor = preprocess_image(rgb_img, mean=[0.5, 0.5, 0.5],
-                                        std=[0.5, 0.5, 0.5])
+    # image_list = glob.glob(''.join(args.image_path))
 
-        # If None, returns the map for the highest scoring category.
-        # Otherwise, targets the requested category.
-        target_category = None
+    image_list = []
+    for root, dirs, files in os.walk(args.image_path):
+        for d in dirs:
+            images = os.listdir(root + d)
+            for image in images:
+                image_list.append(root + d + "/" + image)
+                # 若原图为png格式 热力图为jpg格式 以下方法防止在多次运行cam.py中递归生成错误的热力图
+                # 以下语句的作用是 只有当读取到的图片为 .png 格式时 才执行热力图
+                if os.path.splitext(image)[1] == '.png':
+                    for img in image_list:
+                        rgb_img = cv2.imread(img, 1)[:, :, ::-1]
+                        rgb_img = cv2.resize(rgb_img, (224, 224))
+                        rgb_img = np.float32(rgb_img) / 255
+                        input_tensor = preprocess_image(rgb_img, mean=[0.5, 0.5, 0.5],
+                                                        std=[0.5, 0.5, 0.5])
 
-        # AblationCAM and ScoreCAM have batched implementations.
-        # You can override the internal batch size for faster computation.
-        cam.batch_size = 32
+                        # If None, returns the map for the highest scoring category.
+                        # Otherwise, targets the requested category.
+                        target_category = None
 
-        grayscale_cam = cam(input_tensor=input_tensor,
-                            target_category=target_category,
-                            eigen_smooth=args.eigen_smooth,
-                            aug_smooth=args.aug_smooth)
+                        # AblationCAM and ScoreCAM have batched implementations.
+                        # You can override the internal batch size for faster computation.
+                        cam.batch_size = 32
 
-        # Here grayscale_cam has only one image in the batch
-        grayscale_cam = grayscale_cam[0, :]
-        # 注意一点 若原图为png 存储热力图为jpg 可以避免多次实验中 将上次实验的 热力图 也作为 输入
-        filename = os.path.basename(image)
-        cam_image = show_cam_on_image(rgb_img, grayscale_cam)
-        cv2.imwrite('./insects/' + filename.split('.')[0] + '_viT_' + f'{args.method}.jpg', cam_image)
+                        grayscale_cam = cam(input_tensor=input_tensor,
+                                            target_category=target_category,
+                                            eigen_smooth=args.eigen_smooth,
+                                            aug_smooth=args.aug_smooth)
+
+                        # Here grayscale_cam has only one image in the batch
+                        grayscale_cam = grayscale_cam[0, :]
+                        # 注意一点 若原图为png 存储热力图为jpg 可以避免多次实验中 将上次实验的 热力图 也作为 输入
+                        filename = os.path.basename(image)
+                        cam_image = show_cam_on_image(rgb_img, grayscale_cam)
+                        cv2.imwrite(root + d + "/" + filename.split('.')[0] + '_viTrans.jpg', cam_image)
