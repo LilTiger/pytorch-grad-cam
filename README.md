@@ -293,3 +293,7 @@ Suraj Srinivas, Francois Fleuret`
 ## Notice
 内部含有svm简单分类的模板
 图片存储形式参考classify文件夹
+
+含有将jpg批量转化为png的模板
+
+含有寻找图片中具体颜色空间的模板

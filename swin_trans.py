@@ -5,6 +5,8 @@ import torch
 import timm
 import glob
 import os
+import re
+import tqdm
 
 from pytorch_grad_cam import GradCAM, \
     ScoreCAM, \
@@ -102,40 +104,54 @@ if __name__ == '__main__':
 
     # image_list = glob.glob(''.join(args.image_path))
 
-    image_list = []
-    for root, dirs, files in os.walk(args.image_path):
-        for d in dirs:
-            images = os.listdir(root + d)
-            for image in images:
-                image_list.append(root + d + "/" + image)
-                # 若原图为png格式 热力图为jpg格式 以下方法防止在多次运行cam.py中递归生成错误的热力图
-                # 以下语句的作用是 只有当读取到的图片为 .png 格式时 才执行热力图
-                if os.path.splitext(image)[1] == '.png':
-                    for img in image_list:
-                        rgb_img = cv2.imread(img, 1)[:, :, ::-1]
-                        rgb_img = cv2.resize(rgb_img, (224, 224))
-                        rgb_img = np.float32(rgb_img) / 255
-                        input_tensor = preprocess_image(rgb_img, mean=[0.5, 0.5, 0.5],
-                                                        std=[0.5, 0.5, 0.5])
+    # 此处 因使用os.walk方法计算效率太低 故采用glob读入整个文件夹的图片 循环操作 类子文件夹的方式
+    # 若有20个分类
+    for index in range(1, 21):
+        # 以下方法 匹配 0001-0020 文件夹
+        if index < 10:
+            image_list = glob.glob(''.join(args.image_path) + '000' + str(index) + '/*.jpg')
+        else:
+            image_list = glob.glob(''.join(args.image_path) + '00' + str(index) + '/*.jpg')
+        # 注意 此处若多缩进一处 会导致 index 从 10 开始 试着推演或者debug一下
+        for img in tqdm.tqdm(image_list):
+            # 以下语句的作用是 只有当读取到的图片为 原图 或 增强 格式时 才执行热力图 避免递归执行热力图 以及执行其它模型的热力图
+            # 匹配增强图
+            pattern = re.compile(r'[0-9]+_[0-9].jpg')
+            # 匹配原图
+            patterns = re.compile(r'[0-9]+.jpg')
+            if pattern.search(img) or patterns.search(img):
+                rgb_img = cv2.imread(img, 1)[:, :, ::-1]
+                rgb_img = cv2.resize(rgb_img, (224, 224))
+                rgb_img = np.float32(rgb_img) / 255
+                input_tensor = preprocess_image(rgb_img, mean=[0.5, 0.5, 0.5],
+                                                std=[0.5, 0.5, 0.5])
 
-                        # If None, returns the map for the highest scoring category.
-                        # Otherwise, targets the requested category.
-                        target_category = None
+                # If None, returns the map for the highest scoring category.
+                # Otherwise, targets the requested category.
+                target_category = None
 
-                        # AblationCAM and ScoreCAM have batched implementations.
-                        # You can override the internal batch size for faster computation.
-                        cam.batch_size = 32
+                # AblationCAM and ScoreCAM have batched implementations.
+                # You can override the internal batch size for faster computation.
+                cam.batch_size = 32
 
-                        grayscale_cam = cam(input_tensor=input_tensor,
-                                            target_category=target_category,
-                                            eigen_smooth=args.eigen_smooth,
-                                            aug_smooth=args.aug_smooth)
+                grayscale_cam = cam(input_tensor=input_tensor,
+                                    target_category=target_category,
+                                    eigen_smooth=args.eigen_smooth,
+                                    aug_smooth=args.aug_smooth)
 
-                        # Here grayscale_cam has only one image in the batch
-                        grayscale_cam = grayscale_cam[0, :]
-                        # 注意一点 若原图为png 存储热力图为jpg 可以避免多次实验中 将上次实验的 热力图 也作为 输入
-                        filename = os.path.basename(image)
-                        cam_image = show_cam_on_image(rgb_img, grayscale_cam)
-                        cv2.imwrite(root + d + "/" + filename.split('.')[0] + '_swinTrans.jpg',
-                                    cam_image)
+                # Here grayscale_cam has only one image in the batch
+                grayscale_cam = grayscale_cam[0, :]
 
+                filename = os.path.basename(img)
+                cam_image = show_cam_on_image(rgb_img, grayscale_cam)
+
+                if index < 10:
+                    cv2.imwrite('./insects/train/000' + str(index) + '/' + filename.split('.')[0] + '-swintrans.jpg',
+                                cam_image)
+                else:
+                    cv2.imwrite('./insects/train/00' + str(index) + '/' + filename.split('.')[0] + '-swintrans.jpg',
+                                cam_image)
+        if index < 10:
+            print("generating swin transformer grad-cam for class 000" + str(index) + " finished!")
+        else:
+            print("generating swin transformer grad-cam for class 00" + str(index) + " finished!")

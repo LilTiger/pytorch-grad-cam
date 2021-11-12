@@ -1,13 +1,14 @@
+# 注意 训练/测试集不同时 对应更改directory
+# 注意 insects文件夹包含原图 增强图 和 热力图 classify文件夹中只包含提取出的 特征图
 import sys
 import os
 import cv2
 import numpy as np
 from sklearn.svm import SVC
 from sklearn.model_selection import train_test_split
-import time
+import tqdm
 import pickle
-
-# help(SVC)
+from sklearn.ensemble import VotingClassifier
 
 SHAPE = (30, 30)
 
@@ -45,10 +46,12 @@ if __name__ == "__main__":
 
     X_train, X_test, y_train, y_test = train_test_split(feature_array, label_array, test_size=0.2, random_state=42)
 
+    # 判断是否文件 而不是判断是否存在
     if os.path.isfile("svm_model.pkl"):
         svm = pickle.load(open("svm_model.pkl", "rb"))
     else:
-        svm = SVC(C=0.5, kernel='rbf', gamma=0.001)
+        svm = SVC(C=0.5, kernel='rbf', gamma=0.001, probability=True)
+        print("start fitting....\n")
         svm.fit(X_train, y_train)
         pickle.dump(svm, open("./classify/svm_model.pkl", "wb"))
 
@@ -56,7 +59,7 @@ if __name__ == "__main__":
 
     right = 0
     total = 0
-    for x, y in zip(X_test, y_test):
+    for x, y in tqdm.tqdm(zip(X_test, y_test)):
         x = x.reshape(1, -1)
         prediction = svm.predict(x)[0]
         if y == prediction:

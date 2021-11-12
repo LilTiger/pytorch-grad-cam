@@ -1,9 +1,11 @@
 usage:
+* 注意 由于 训练/测试集 不同 三种模型不同 故注意更换不同数据集/模型时 需更改代码 具体在文件开头有写
 
+训练集：
 python cam.py --image-path './insects/train/' --use-cuda
 python swin_trans.py --image-path './insects/train/' --use-cuda --method gradcam
 python vi_trans.py --image-path './insects/train/' --use-cuda
-
+测试集：
 python cam.py --image-path './insects/test/' --use-cuda
 python swin_trans.py --image-path './insects/test/' --use-cuda --method gradcam
 python vi_trans.py --image-path './insects/test/' --use-cuda
@@ -14,9 +16,8 @@ extract.py中针对 不同模型 和 train/test 的数据集 会有文件名和�
 
 note:
 swin transformer 和 visual transformer 会把图片 resize 成 224*224尺寸
-
 在实验中 请注意原图和热力图的格式（.png或.jpg）
-若多次实验不想递归生成错误的热力图 注意在cam.py中 第108行 中可做更改 swinT.py 和 viT.py同理
+
 
 昆虫实验测试
 大部分情况下 gradcam具有良好的效果 少数图片 对应某个模型 效果较好 如swinT_xgradcam viT_gradcam
@@ -26,4 +27,7 @@ swin transformer 和 visual transformer 会把图片 resize 成 224*224尺寸
 请注意 为方便分类任务 cam.py swinT.py viT.py extract.py 全部都为读取 文件夹下 所有类文件夹的图片 并输出到对应类文件夹中
 
 * 其中extract.py 从 输入路径对应类文件夹获取热力图和原图 拼接后输出到 输出路径对应类文件夹 可以参考具体如何实现
+
+Time
+gradcam 每个文件夹绘制热图需4分钟 20类大约一共需要80分钟
 
