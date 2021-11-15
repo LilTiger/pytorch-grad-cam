@@ -146,10 +146,10 @@ if __name__ == '__main__':
                 cam_image = show_cam_on_image(rgb_img, grayscale_cam)
 
                 if index < 10:
-                    cv2.imwrite('./insects/train/000' + str(index) + '/' + filename.split('.')[0] + '-swintrans.jpg',
+                    cv2.imwrite(''.join(args.image_path) + '000' + str(index) + '/' + filename.split('.')[0] + '-swintrans.jpg',
                                 cam_image)
                 else:
-                    cv2.imwrite('./insects/train/00' + str(index) + '/' + filename.split('.')[0] + '-swintrans.jpg',
+                    cv2.imwrite(''.join(args.image_path) + '00' + str(index) + '/' + filename.split('.')[0] + '-swintrans.jpg',
                                 cam_image)
         if index < 10:
             print("generating swin transformer grad-cam for class 000" + str(index) + " finished!")

@@ -1,5 +1,13 @@
 usage:
 * 注意 由于 训练/测试集 不同 三种模型不同 故注意更换不同数据集/模型时 需更改代码 具体在文件开头有写
+** 关键步骤
+   训练集 需要跑出 热图 （执行cam.py等多个文件） 之后执行extract.py提取特征至classify文件夹 然后svm_train.py训练
+   测试集 需要跑出 热图 （执行cam.py等多个文件） 之后执行extract.py提取特征至classify文件夹 然后svm_test.py测试
+** 文件需要更改的地方
+cam.py类文件 由下面训练/测试集的不同指令输入即可
+extract.py 需更改 directory_input 和 directory_output 和 35行 不同模型跑出来的对应 热力图 文件
+svm_train.py 和 svm_test.py 需修改 directory 和 .pkl模型名
+
 
 训练集：
 python cam.py --image-path './insects/train/' --use-cuda
@@ -29,5 +37,10 @@ swin transformer 和 visual transformer 会把图片 resize 成 224*224尺寸
 * 其中extract.py 从 输入路径对应类文件夹获取热力图和原图 拼接后输出到 输出路径对应类文件夹 可以参考具体如何实现
 
 Time
-gradcam 每个文件夹绘制热图需4分钟 20类大约一共需要80分钟
+gradcam 每个文件夹绘制热图需4分钟 20类大约一共需要 80min
+svm_train 对数据集中20个类共 50000 张图片进行训练 花费时间大约 5h
+
+
+Precision
+增加数据特征维度 不能增加准确度
 

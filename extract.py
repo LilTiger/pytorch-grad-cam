@@ -15,8 +15,8 @@ import tqdm
 # img_list = glob.glob('./insects/[0-9][0-9][0-9][0-9][0-9]_gradcam.jpg')
 
 # 以下代码 将 每一类文件夹 下的所有 热力图 与 原图 按位与 以提取特征
-directory_input = './insects/train/'
-directory_output = './classify/train/'
+directory_input = './insects/test/'
+directory_output = './classify/test/'
 
 # 热力图列表
 heap_list = []

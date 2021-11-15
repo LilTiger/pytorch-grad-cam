@@ -155,10 +155,10 @@ if __name__ == '__main__':
 
                 # 将生成的热力图保存到对应类文件夹中
                 if index < 10:
-                    cv2.imwrite('./insects/train/000' + str(index) + '/' + filename.split('.')[0] + '-resnet.jpg',
+                    cv2.imwrite(''.join(args.image_path) + '000' + str(index) + '/' + filename.split('.')[0] + '-resnet.jpg',
                                 cam_image)
                 else:
-                    cv2.imwrite('./insects/train/00' + str(index) + '/' + filename.split('.')[0] + '-resnet.jpg',
+                    cv2.imwrite(''.join(args.image_path) + '00' + str(index) + '/' + filename.split('.')[0] + '-resnet.jpg',
                                 cam_image)
         if index < 10:
             print("generating resnet grad-cam for class 000" + str(index) + " finished!")
