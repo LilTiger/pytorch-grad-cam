@@ -9,6 +9,7 @@ from sklearn.linear_model import SGDClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import GridSearchCV
 import tqdm
+from sklearn.metrics import f1_score, confusion_matrix, recall_score, accuracy_score, precision_score
 import pickle
 from sklearn.ensemble import VotingClassifier
 
@@ -42,7 +43,7 @@ def extractFeaturesFromImage(image_file):
 if __name__ == "__main__":
 
     # 训练函数 此处固定为 训练集 路径
-    directory = "./classify/train/"
+    directory = "./classify/tests/"
 
     print("extracting feathers and labels...")
     feature_array, label_array = getImageData(directory)
@@ -50,15 +51,14 @@ if __name__ == "__main__":
     # 取出一部分作为验证集
     x_train, x_test, y_train, y_test = train_test_split(feature_array, label_array, test_size=0.2, random_state=42)
 
-    # 以下方法寻找最优参数 如果需要使用 将下面代码 取消注解 将78-106行 注释 即可
+    # 以下方法寻找最优参数 如果需要使用 将下面代码 取消注解 将79-119行 注释 即可
     # 调用 GridSearchCV，将 SVC(), tuned_parameters, cv=5, 还有 scoring 传递进去，
-    tuned_parameters = [{'loss': ['hinge', 'log', 'squared_hinge'], 'penalty': ['l2', 'l1', 'elasticnet'],
-                         'max_iter': [1000, 2000, 5000]}]
+    tuned_parameters = [{'C': [0.5, 1, 10, 100], 'gamma': [0.1, 0.01, 0.001, 0.0001]}]
     scores = ['precision', 'recall']
     for score in scores:
         print("# Tuning hyper-parameters for %s" % score)
         print()
-        clf = GridSearchCV(SGDClassifier(), tuned_parameters, cv=5,
+        clf = GridSearchCV(SVC(), tuned_parameters, cv=3,
                            scoring='%s_macro' % score)
 
         clf.fit(x_train, y_train)
@@ -82,30 +82,41 @@ if __name__ == "__main__":
     #     svm = pickle.load(open("svm_model.pkl", "rb"))
     # else:
     #     # SVC: Best parameters set found on development set:
-    #     # {'C': 2, 'gamma': 0.01, 'kernel': 'rbf'}
+    #     # {'C': 1, 'gamma': 0.1, 'kernel': 'rbf'}
     #     # SGDClassifier： Best parameters set found on development set:
     #     # {'loss': 'squared_hinge', 'penalty': 'elasticnet'}
     #     # svm = SVC(C=2, gamma=0.01, kernel='rbf')
-    #     svm = SGDClassifier(penalty='elasticnet')
+    #     svm = SVC(C=2, gamma=0.0001)
     #     print("start fitting....\n")
     #     svm.fit(x_train, y_train)
     #     pickle.dump(svm, open("./classify/svm_model.pkl", "wb"))
     #
     # print("testing...\n")
+    # 以下开始在验证集中测试
+    # truth = []
+    # predict = []
+    # truth_num = []
+    # predict_num = []
     #
-    # right = 0
-    # total = 0
     # for x, y in tqdm.tqdm(zip(x_test, y_test)):
     #     x = x.reshape(1, -1)
     #     prediction = svm.predict(x)[0]
-    #     if y == prediction:
-    #         right += 1
-    #     total += 1
     #
-    # accuracy = round(float(right) / float(total), 4)
+    #     truth.append(y)
+    #     predict.append(prediction)
+    #     truth_num = list(map(int, truth))
+    #     predict_num = list(map(int, predict))
     #
-    # print(str(accuracy) + " accuracy")
-
+    # accuracy = accuracy_score(truth_num, predict_num)
+    # # 注意 recall_micro = f1 score_micro = accuracy
+    # precision = precision_score(truth_num, predict_num, average='weighted')
+    # f1 = f1_score(truth_num, predict_num, average='weighted')
+    # recall = recall_score(truth_num, predict_num, average='weighted')
+    # print("以下输出 在验证集中的测试结果： \n")
+    # print("accuracy: " + str(accuracy))
+    # print("precision: " + str(precision))
+    # print("recall: " + str(recall))
+    # print("f1 score: " + str(f1))
 
 print("success")
 

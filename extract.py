@@ -19,7 +19,7 @@ directory_input = './insects/test/'
 directory_output = './classify/test/'
 
 # 热力图列表
-heap_list = []
+heat_list = []
 # 原图列表
 origin_list = []
 
@@ -33,7 +33,7 @@ for index in range(1, 21):
         # 注意跑不同模型时 下列语句 需对应更改
     for file in file_list:
         if str(file).endswith('-resnet.jpg'):
-            heap_list.append(file)
+            heat_list.append(file)
         # 若原图和热力图都为 jpg 格式 可以用正则表达式的方式匹配到原图
         # 匹配原图
         pattern = re.compile(r'[0-9]+.jpg')
@@ -43,7 +43,7 @@ for index in range(1, 21):
             origin_list.append(file)
 
     # 千万注意 数据量大时 小心过分嵌套 会影响效率
-    for image in tqdm.tqdm(heap_list):
+    for image in tqdm.tqdm(heat_list):
         img = cv2.imread(image)
         temp_name = os.path.basename(image)
         temp_name = temp_name.split('-')[0]
@@ -76,7 +76,7 @@ for index in range(1, 21):
     # 由于每次循环都读入一个文件夹中所有图片 若没有下列语句 此方法将递归将所有类子文件夹的图片append至列表中(此点与cam等方法中不同）
     # 故应该在每次循环后 清空列表 确保每次循环中的列表内容只包含该类文件夹下 所有图片
     file_list.clear()
-    heap_list.clear()
+    heat_list.clear()
     origin_list.clear()
 
 print("extraction finished.")
