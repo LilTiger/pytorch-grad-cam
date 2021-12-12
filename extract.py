@@ -15,8 +15,8 @@ import tqdm
 # img_list = glob.glob('./insects/[0-9][0-9][0-9][0-9][0-9]_gradcam.jpg')
 
 # 以下代码 将 每一类文件夹 下的所有 热力图 与 原图 按位与 以提取特征
-directory_input = './insects/test/'
-directory_output = './classify/test/'
+directory_input = './insects/train/'
+directory_output = './classify/train/'
 
 # 热力图列表
 heat_list = []
@@ -32,7 +32,7 @@ for index in range(1, 21):
         # 以下寻找类文件夹中 特定模型 跑出的热力图
         # 注意跑不同模型时 下列语句 需对应更改
     for file in file_list:
-        if str(file).endswith('-resnet.jpg'):
+        if str(file).endswith('-vitrans.jpg'):
             heat_list.append(file)
         # 若原图和热力图都为 jpg 格式 可以用正则表达式的方式匹配到原图
         # 匹配原图
@@ -49,7 +49,7 @@ for index in range(1, 21):
         temp_name = temp_name.split('-')[0]
         hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
         lower_red = np.array([50, 0, 0])
-        upper_red = np.array([150, 255, 255])
+        upper_red = np.array([255, 255, 200])
         # 提取出热力图中的显著区域
         red_mask = cv2.inRange(hsv, lower_red, upper_red)
 

@@ -15,10 +15,10 @@ sf = []  # 空间频率
 Hue = []  # 色度
 Saturation = []  # 饱和度
 Value = []  # 亮度
-filepath = './insects/ttt/'  # 图像文件所在目录
+filepath = './insects/max/'  # 图像文件所在目录
 pathDir = os.listdir(filepath)
 
-for img in glob.glob('./insects/ttt/*.jpg'):
+for img in glob.glob(filepath + '*.jpg'):
     image = cv2.imread(img)
     hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
     H, S, V = cv2.split(hsv)
@@ -60,7 +60,7 @@ for img in glob.glob('./insects/ttt/*.jpg'):
     保存到excel表格中
     '''
 
-df = pd.read_excel('./insects/ttt/1.xlsx')  # 读取原有数据表格
+df = pd.read_excel('./insects/max/1.xlsx')  # 读取原有数据表格
 # df=DataFrame(sf)#只能写入DataFrame格式文件，不能直接写列表
 df['SF'] = list(sf)  # 新增一列数据注意 数据长度与原有表格行数不同会报错
 # 错误提示为：

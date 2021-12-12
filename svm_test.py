@@ -9,7 +9,7 @@ import tqdm
 from sklearn.metrics import f1_score, confusion_matrix, recall_score, accuracy_score, precision_score
 
 
-clf = joblib.load("./classify/svm_model - resnet.pkl")
+clf = joblib.load("./classify/svm_model.pkl")
 SHAPE = (56, 56)
 
 
@@ -39,7 +39,7 @@ def extractFeaturesFromImage(image_file):
 
 
 # 测试函数 此处固定为 测试集 路径
-directory = "./classify/test-resnet/"
+directory = "./classify/test/"
 
 # # newline的作用为在writerows方法内避免空行出现
 # fp = open("./classify/test.csv", "w", newline='')
@@ -96,9 +96,9 @@ for x, y in tqdm.tqdm(zip(feature_array, label_array)):
 # 此处accuracy的计算方法 得出的是 所有分类 的准确率 即(预测正确的图片/所有测试集图片)
 accuracy = accuracy_score(truth_num, predict_num)
 # 注意 recall_micro = f1 score_micro = accuracy
-precision = precision_score(truth_num, predict_num, average='weighted')
-f1 = f1_score(truth_num, predict_num, average='weighted')
-recall = recall_score(truth_num, predict_num, average='weighted')
+precision = precision_score(truth_num, predict_num, average='macro')
+f1 = f1_score(truth_num, predict_num, average='macro')
+recall = recall_score(truth_num, predict_num, average='macro')
 # 打印混淆矩阵
 print(confusion_matrix(truth, predict))
 print("accuracy: " + str(accuracy))

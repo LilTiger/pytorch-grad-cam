@@ -8,7 +8,7 @@ def callback(object):
 
 
 def Choose_Color():
-    filename = './insects/train/0001/04921_0-fusion.jpg'
+    filename = './insects/test/0020/66895-resnet.jpg'
     image0 = cv2.imread(filename, 1)
     img = cv2.resize(image0, (640, 480))
     img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
@@ -21,14 +21,14 @@ def Choose_Color():
 
     cv2.imshow("image", img)
 
-    cv2.createTrackbar("H_min", "image", 0, 255, callback)
-    cv2.createTrackbar("H_max", "image", 100, 255, callback)
+    cv2.createTrackbar("H_min", "image", 50, 255, callback)
+    cv2.createTrackbar("H_max", "image", 255, 255, callback)
 
     cv2.createTrackbar("S_min", "image", 0, 255, callback)
     cv2.createTrackbar("S_max", "image", 255, 255, callback)
 
     cv2.createTrackbar("V_min", "image", 0, 255, callback)
-    cv2.createTrackbar("V_max", "image", 255, 255, callback)
+    cv2.createTrackbar("V_max", "image", 200, 255, callback)
 
     while (True):
 
