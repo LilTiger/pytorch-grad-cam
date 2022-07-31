@@ -23,7 +23,7 @@ python vi_trans.py --image-path './insects/test/' --use-cuda
 extract.py中针对 不同模型 和 train/test 的数据集 会有文件名和路径的不同 注意采用不同方法时更改对应参数
 
 note:
-swin transformer 和 visual transformer 会把图片 resize 成 224*224尺寸
+swin transformer 和 vision transformer 会把图片 resize 成 224*224尺寸
 在实验中 请注意原图和热力图的格式（.png或.jpg）
 
 
