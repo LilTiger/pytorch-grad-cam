@@ -2,11 +2,10 @@ import argparse
 import cv2
 import numpy as np
 import torch
-import os
 import glob
-import pdb
-import re
 import tqdm
+import re
+import os
 
 from pytorch_grad_cam import GradCAM, \
     ScoreCAM, \
@@ -21,7 +20,7 @@ from pytorch_grad_cam import GradCAM, \
 from pytorch_grad_cam import GuidedBackpropReLUModel
 from pytorch_grad_cam.utils.image import show_cam_on_image, \
     preprocess_image
-
+from pytorch_grad_cam.ablation_layer import AblationLayerVit
 
 def get_args():
     parser = argparse.ArgumentParser()
@@ -67,7 +66,7 @@ def reshape_transform(tensor, height=14, width=14):
 
 
 if __name__ == '__main__':
-    """ python vi_trans.py -image-path <path_to_image>
+    """ python vit_gradcam.py --image-path <path_to_image>
     Example usage of using cam-methods on a VIT network.
 
     """
@@ -99,66 +98,72 @@ if __name__ == '__main__':
     if args.method not in methods:
         raise Exception(f"Method {args.method} not implemented")
 
-    cam = methods[args.method](model=model,
-                               target_layers=target_layers,
-                               use_cuda=args.use_cuda,
-                               reshape_transform=reshape_transform)
+    if args.method == "ablationcam":
+        cam = methods[args.method](model=model,
+                                   target_layers=target_layers,
+                                   use_cuda=args.use_cuda,
+                                   reshape_transform=reshape_transform,
+                                   ablation_layer=AblationLayerVit())
+    else:
+        cam = methods[args.method](model=model,
+                                   target_layers=target_layers,
+                                   use_cuda=args.use_cuda,
+                                   reshape_transform=reshape_transform)
 
-    # image_list = glob.glob(''.join(args.image_path))
 
     torch.cuda.empty_cache()
 
-    # 以下方法为读入单个文件夹中所有图片 若需如此 只需将下面语句开启并将102-112行注释 并将之后的代码退缩进
-    # image_list = glob.glob(''.join(args.image_path))
+    image_list = glob.glob(''.join(args.image_path) + '*.jpg')
 
-    # 此处 因使用os.walk方法计算效率太低 故采用glob读入整个文件夹的图片 循环操作 类子文件夹的方式
-    # 若有20个分类
-    for index in range(1, 21):
-        # 以下方法 匹配 0001-0020 文件夹
-        if index < 10:
-            image_list = glob.glob(''.join(args.image_path) + '000' + str(index) + '/*.jpg')
-        else:
-            image_list = glob.glob(''.join(args.image_path) + '00' + str(index) + '/*.jpg')
-        # 注意 此处若多缩进一处 会导致 index 从 10 开始 试着推演或者debug一下
-        for img in tqdm.tqdm(image_list):
-            # 以下语句的作用是 只有当读取到的图片为 原图 或 增强 格式时 才执行热力图 避免递归执行热力图 以及执行其它模型的热力图
-            # 匹配增强图
-            pattern = re.compile(r'[0-9]+_[0-9].jpg')
-            # 匹配原图
-            patterns = re.compile(r'[0-9]+.jpg')
-            if pattern.search(img) or patterns.search(img):
-                rgb_img = cv2.imread(img, 1)[:, :, ::-1]
-                rgb_img = cv2.resize(rgb_img, (224, 224))
-                rgb_img = np.float32(rgb_img) / 255
-                input_tensor = preprocess_image(rgb_img, mean=[0.5, 0.5, 0.5],
-                                                std=[0.5, 0.5, 0.5])
+    # # 此处 因使用os.walk方法计算效率太低 故采用glob读入整个文件夹的图片 循环操作 类子文件夹的方式
+    # # 若有20个分类
+    # for index in range(1, 21):
+    #     # 以下方法 匹配 0001-0020 文件夹
+    #     if index < 10:
+    #         image_list = glob.glob(''.join(args.image_path) + '000' + str(index) + '/*.jpg')
+    #     else:
+    #         image_list = glob.glob(''.join(args.image_path) + '00' + str(index) + '/*.jpg')
+    #     # 注意 此处若多缩进一处 会导致 index 从 10 开始 试着推演或者debug一下
+    for img in tqdm.tqdm(image_list):
+        # 以下语句的作用是 只有当读取到的图片为 原图 或 增强 格式时 才执行热力图 避免递归执行热力图 以及执行其它模型的热力图
+        # 匹配增强图
+        pattern = re.compile(r'[0-9]+_[0-9].jpg')
+        # 匹配原图
+        patterns = re.compile(r'[0-9]+.jpg')
+        if pattern.search(img) or patterns.search(img):
+            rgb_img = cv2.imread(img, 1)[:, :, ::-1]
+            rgb_img = cv2.resize(rgb_img, (224, 224))
+            rgb_img = np.float32(rgb_img) / 255
+            input_tensor = preprocess_image(rgb_img, mean=[0.5, 0.5, 0.5],
+                                            std=[0.5, 0.5, 0.5])
 
-                # If None, returns the map for the highest scoring category.
-                # Otherwise, targets the requested category.
-                target_category = None
+            # If None, returns the map for the highest scoring category.
+            # Otherwise, targets the requested category.
+            targets = None
 
-                # AblationCAM and ScoreCAM have batched implementations.
-                # You can override the internal batch size for faster computation.
-                cam.batch_size = 32
+            # AblationCAM and ScoreCAM have batched implementations.
+            # You can override the internal batch size for faster computation.
+            cam.batch_size = 32
 
-                grayscale_cam = cam(input_tensor=input_tensor,
-                                    target_category=target_category,
-                                    eigen_smooth=args.eigen_smooth,
-                                    aug_smooth=args.aug_smooth)
+            grayscale_cam = cam(input_tensor=input_tensor,
+                                targets=targets,
+                                eigen_smooth=args.eigen_smooth,
+                                aug_smooth=args.aug_smooth)
 
-                # Here grayscale_cam has only one image in the batch
-                grayscale_cam = grayscale_cam[0, :]
+            # Here grayscale_cam has only one image in the batch
+            grayscale_cam = grayscale_cam[0, :]
 
-                filename = os.path.basename(img)
-                cam_image = show_cam_on_image(rgb_img, grayscale_cam)
+            filename = os.path.basename(img)
+            cam_image = show_cam_on_image(rgb_img, grayscale_cam)
+            cv2.imwrite(''.join(args.image_path) + filename.split('.')[0] + '-vitrans.jpg', cam_image)
 
-                if index < 10:
-                    cv2.imwrite(''.join(args.image_path) + '000' + str(index) + '/' + filename.split('.')[0] + '-vitrans.jpg',
-                                cam_image)
-                else:
-                    cv2.imwrite(''.join(args.image_path) + '00' + str(index) + '/' + filename.split('.')[0] + '-vitrans.jpg',
-                                cam_image)
-        if index < 10:
-            print("generating vision transformer grad-cam for class 000" + str(index) + " finished!")
-        else:
-            print("generating vision transformer grad-cam for class 00" + str(index) + " finished!")
+    #         if index < 10:
+    #             cv2.imwrite(''.join(args.image_path) + '000' + str(index) + '/' + filename.split('.')[0] + '-vitrans.jpg',
+    #                         cam_image)
+    #         else:
+    #             cv2.imwrite(''.join(args.image_path) + '00' + str(index) + '/' + filename.split('.')[0] + '-vitrans.jpg',
+    #                         cam_image)
+    # if index < 10:
+    #     print("generating vision transformer grad-cam for class 000" + str(index) + " finished!")
+    # else:
+    #     print("generating vision transformer grad-cam for class 00" + str(index) + " finished!")
