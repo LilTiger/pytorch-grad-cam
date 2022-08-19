@@ -139,7 +139,6 @@ if __name__ == '__main__':
                 cam.batch_size = 32
 
                 grayscale_cam = cam(input_tensor=input_tensor,
-                                    target_category=target_category,
                                     aug_smooth=args.aug_smooth,
                                     eigen_smooth=args.eigen_smooth)
 
